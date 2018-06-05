@@ -19,26 +19,27 @@ public class MTSClassificationTest {
 
   // The multivariate datasets to use
   public static String[] datasets = new String[]{
-      "LP1",
-      "LP2",
-      "LP3",
-      "LP4",
-      "LP5",
-      "PenDigits",
-      "ShapesRandom",
-      "DigitShapeRandom",
-      "CMUsubject16",
-      "ECG",
-      "JapaneseVowels",
-      "KickvsPunch",
-      "Libras",
-      "UWave",
-      "Wafer",
-      "WalkvsRun",
-      "CharacterTrajectories",
-      "ArabicDigits",
-      "AUSLAN",
-      "NetFlow",
+      //"LP1",
+      //"LP2",
+      //"LP3",
+      //"LP4",
+      //"LP5",
+      //"PenDigits",
+      //"ShapesRandom",
+      //"DigitShapeRandom",
+      //"CMUsubject16",
+      //"ECG",
+      //"JapaneseVowels",
+      //"KickvsPunch",
+      //"Libras",
+      //"UWave",
+      //"Wafer",
+      //"WalkvsRun",
+      //"CharacterTrajectories",
+      //"ArabicDigits",
+      //"AUSLAN",
+      //"NetFlow",
+      "MYMTS"
   };
 
 
@@ -68,10 +69,31 @@ public class MTSClassificationTest {
               MultiVariateTimeSeries[] trainSamples = TimeSeriesLoader.loadMultivariateDatset(train, useDerivatives);
               MultiVariateTimeSeries[] testSamples = TimeSeriesLoader.loadMultivariateDatset(test, useDerivatives);
 
-              MUSEClassifier muse = new MUSEClassifier();
-              MUSEClassifier.BIGRAMS = true;
-              MUSEClassifier.MAX_WINDOW_LENGTH = 450;
-              MUSEClassifier.Score museScore = muse.eval(trainSamples, testSamples);
+              MUSEClassifier muse;
+              MUSEClassifier.Score score;
+              // by jiaxi
+              //File savedMuse = new File("/home/jiaxi/Desktop/savedMuse.model");
+              //if (savedMuse.exists()) {
+                  //muse = new MUSEClassifier();
+                  //muse = (MUSEClassifier) Classifier.load(savedMuse);
+                  //score = new MUSEClassifier.Score();
+                  //score = muse.model.score;
+              //} else {
+                  muse = new MUSEClassifier();
+                  MUSEClassifier.BIGRAMS = true;
+                  MUSEClassifier.MAX_WINDOW_LENGTH = 450;
+                  score = new MUSEClassifier.Score();
+                  score = muse.fit(trainSamples);
+                  //muse.save(savedMuse);
+              //}
+              
+              int correctTesting = muse.score(testSamples).correct.get();
+              MUSEClassifier.Score museScore = new MUSEClassifier.Score(
+                      "WEASEL+MUSE",
+                      correctTesting, testSamples.length,
+                      score.training, trainSamples.length,
+                      score.windowLength);
+              //MUSEClassifier.Score museScore = muse.eval(trainSamples, testSamples);
               System.out.println(s + ";" + museScore.toString());
             }
           }

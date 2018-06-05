@@ -24,7 +24,7 @@ import java.util.Comparator;
 public class MUSEClassifier extends Classifier {
 
   public static int maxF = 6;
-  public static int minF = 2;
+  public static int minF = 6;
   public static int maxS = 4;
   public static SFA.HistogramType[] histTypes
       = new SFA.HistogramType[]{SFA.HistogramType.EQUI_DEPTH, SFA.HistogramType.EQUI_FREQUENCY};
@@ -40,11 +40,11 @@ public class MUSEClassifier extends Classifier {
   public static boolean lowerBounding = true;
 
   // the trained muse model
-  MUSEModel model;
+  public MUSEModel model;
 
   public MUSEClassifier() {
     super();
-    TimeSeries.APPLY_Z_NORM = false; // FIXME static variable breaks some test cases!
+    TimeSeries.APPLY_Z_NORM = true; // FIXME static variable breaks some test cases!
   }
 
   public static class MUSEModel extends Model {
@@ -140,6 +140,52 @@ public class MUSEClassifier extends Classifier {
     return model.score;
   }
 
+  public Double[] iPredict(final MultiVariateTimeSeries[] samples) {
+    // iterate each sample to classify
+    int dimensionality = samples[0].getDimensions();
+    final int[][][] wordsTest = model.muse.createWords(samples);
+    MUSE.BagOfBigrams[] bagTest = model.muse.createBagOfPatterns(wordsTest, samples, dimensionality, model.features);
+
+    // chi square changes key mappings => remap
+    model.muse.dict.remap(bagTest);
+
+    FeatureNode[][] features = initLibLinear(bagTest, model.linearModel.getNrFeature());
+
+    Double[] labels = new Double[samples.length];
+
+    for (int ind = 0; ind < features.length; ind++) {
+        double label = Linear.predict(model.linearModel, features[ind]);
+        labels[ind] = label;
+    }
+
+    return labels;
+  }
+
+  public int[] iScore(final MultiVariateTimeSeries[] testSamples) {
+    // testResults = [TruePositive, TrueNegative, FalsePositive, FalseNegative]
+    int[] testResults = new int[]{0, 0, 0, 0};
+    Double[] predLabels = iPredict(testSamples);
+    for (int i = 0; i < testSamples.length; i++) {
+        if (testSamples[i].getLabel() > 0) {
+            if (predLabels[i] > 0) {
+                // True Positive
+                testResults[0] += 1;
+            } else {
+                // False Negative
+                testResults[3] += 1;
+            }
+        } else {
+            if (predLabels[i] > 0) {
+                // False Positive
+                testResults[2] += 1;
+            } else {
+                // True Negative
+                testResults[1] += 1;
+            }
+        }
+   }
+    return testResults;
+  }
 
   public Predictions score(final MultiVariateTimeSeries[] testSamples) {
     Double[] labels = predict(testSamples);
@@ -165,7 +211,7 @@ public class MUSEClassifier extends Classifier {
       boolean bestNorm = false;
       SFA.HistogramType bestHistType = null;
 
-      int min = 4;
+      int min = 6;
       int max = getMax(samples, MAX_WINDOW_LENGTH);
       final int[] windowLengths = new int[max - min + 1];
       for (int w = min, a = 0; w <= max; w++, a++) {

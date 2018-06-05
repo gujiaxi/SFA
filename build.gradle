@@ -49,7 +49,7 @@ dependencies {
     // efficient collection implementation without "object boxing"
     compile 'com.carrotsearch:hppc:0.7.2'
     // java serialiser
-    compile 'com.esotericsoftware:kryo:4.0.1'
+    compile 'com.esotericsoftware:kryo:4.0.2'
 
     compile 'junit:junit:4.12'
     testCompile 'junit:junit:4.12'
